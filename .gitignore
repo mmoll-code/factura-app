@@ -1,0 +1,36 @@
+
+
+# FRONTEND Node (Angular)
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.angular/
+/frontend/.env
+
+# Angular build artifacts
+*.tsbuildinfo
+
+# BACKEND - Python (FastAPI)
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+output/
+temp.zip
+extracted/
+
+# Environment variables
+.env
+.env.*
+
+# VSCode / PyCharm
+.vscode/
+.idea/
+
+
+test_data/
+
+# OS
+.DS_Store
+Thumbs.db
