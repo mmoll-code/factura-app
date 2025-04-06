@@ -1,0 +1,16 @@
+<p>main-page works!</p>
+
+
+<div class="container">
+    <h1>🧾 Procesador de Facturas Martin</h1>
+  
+    <input type="file" (change)="onFileSelected($event)" accept=".zip" />
+  
+    <button (click)="uploadZip()" [disabled]="!selectedFile">Subir ZIP</button>
+  
+    <div *ngIf="downloadUrl">
+      <p>✅ Archivo procesado correctamente.</p>
+      <a [href]="downloadUrl" download="facturas.xlsx">Descargar Excel</a>
+    </div>
+  </div>
+  
