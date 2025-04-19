@@ -1,0 +1,67 @@
+.card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+    background-color: white;
+    margin: 1rem 0;
+    display: block;
+    min-height: 300px;
+    
+  
+    &:hover {
+      transform: translateY(-5px);
+    }
+  
+    .card-background {
+        // background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('../../../assets/images/pexels-photo-bkg.jpeg');
+        background-size: cover;
+        background-position: center center;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0; // 👈 importante para asegurar altura
+        background-size: cover;
+        background-position: center;
+        opacity: 0.4;
+        z-index: 1;
+        pointer-events: none;
+    }
+  
+    .card-content {
+      position: relative;
+      z-index: 2;
+      padding: 1.5rem;
+  
+      .card-title {
+        font-size: 1.4rem;
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+      }
+  
+      .card-header {
+        font-size: 0.85rem;
+        color: #666;
+        display: block;
+        margin-bottom: 0.75rem;
+      }
+  
+      .card-body {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+      }
+  
+      .card-link {
+        display: inline-block;
+        color: #f55a1e;
+        font-weight: bold;
+        text-decoration: none;
+  
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+}

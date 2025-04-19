@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
   standalone: true,
   imports: [CommonModule, HttpClientModule, FormsModule],
   templateUrl: './main-page.component.html',
-  styleUrls: ['./main-page.component.css']
+  styleUrls: ['./main-page.component.scss']
 })
 export class MainPageComponent {
   selectedFile: File | null = null;

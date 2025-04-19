@@ -1,0 +1,10 @@
+<div class="card">
+    <div class="card-background" [style.background-image]="'url(' + image + ')'"></div>
+
+    <div class="card-content">
+        <h3 class="card-title">{{ title }}</h3>
+        <small class="card-header">{{ header }}</small>
+        <p class="card-body">{{ description }}</p>
+        <a [routerLink]="link" class="card-link">Ver más →</a>
+    </div>
+</div>

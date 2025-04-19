@@ -101,3 +101,6 @@ facturas-app/
 🧑‍💻 Autor
 
 Desarrollado por Martín, con ❤️ y ayuda de ChatGPT.
+
+------------------------------------------------
+PARA CORRER EL BACKEND: parado en `./backend` -> `uvicorn main:app --reload`

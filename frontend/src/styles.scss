@@ -1,0 +1,139 @@
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: 'Montserrat', 'Segoe UI', sans-serif;
+  color: #111;
+  background: #fff;
+}
+
+// .navbar {
+//   background-color: white;
+//   color: black;
+//   padding: 1rem 2rem;
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   border-bottom: 1px solid #ddd;
+//   position: sticky;
+//   top: 0;
+//   z-index: 1000;
+
+//   .logo {
+//     font-weight: bold;
+//     font-size: 1.5rem;
+//   }
+
+//   .nav-links {
+//     list-style: none;
+//     display: flex;
+//     gap: 1rem;
+
+//     a {
+//       text-decoration: none;
+//       color: black;
+//       font-weight: 500;
+
+//       &:hover {
+//         text-decoration: underline;
+//       }
+//     }
+//   }
+// }
+
+/* Hero Section */
+.hero {
+  // background: url('assets/images/pexels-photo-bkg.jpeg') center/cover no-repeat;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('assets/images/pexels-photo-bkg.jpeg');
+  background-size: cover;
+  background-position: center center;
+  height: 100%;
+  color: white;
+  text-align: center;
+  padding: 4rem 1rem;
+
+  h1 {
+    font-size: 2rem;
+    // margin-bottom: 1rem;
+    --tw-text-opacity: 1;
+    color: rgb(255 237 213/var(--tw-text-opacity));
+  }
+
+  p {
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: auto;
+  }
+
+  @media (min-width: 768px) {
+    h1 {
+      font-size: 3rem;
+    }
+    p {
+      font-size: 1.25rem;
+    }
+  }
+}
+
+
+.about {
+  padding: 1rem 1.5rem;
+  // font-size: 1.1rem;
+  // max-width: 600px;
+  // margin: auto;
+}
+
+/* Pricing Section */
+.pricing {
+  background-color: #f8f8f8;
+  padding: 1rem 1rem;
+  text-align: center;
+
+  h2 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .plan-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 900px;
+    margin: auto;
+
+    .plan {
+      background: white;
+      padding: 2rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+      h3 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+      }
+
+      p {
+        color: #444;
+        margin-bottom: 0.5rem;
+      }
+    }
+
+    @media (min-width: 768px) {
+      flex-direction: row;
+    }
+  }
+}
+
+.feature {
+  padding: 0 1rem;
+}
+
+.contact {
+  padding: 1rem 1.5rem;
+  font-size: .5rem;
+  // max-width: 600px;
+  // margin: auto;
+}

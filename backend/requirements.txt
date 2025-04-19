@@ -4,7 +4,14 @@ python-multipart
 pytesseract
 pandas
 openpyxl
-pillow
-openai
+Pillow
 azure-ai-formrecognizer
 opencv-python
+openai==1.56.1
+python-dotenv==1.0.1
+azure-ai-formrecognizer==3.3.3
+PyMuPDF
+numpy
+opencv-python
+azure-ai-documentintelligence
+httpx==0.28.0
