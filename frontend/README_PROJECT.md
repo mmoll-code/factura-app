@@ -2,6 +2,20 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.1.
 
+## Instalar Prettier:
+
+```bash
+npm install --save-dev prettier
+```
+
+## Instalar Angular ESLint
+
+```bash
+ng add @angular-eslint/schematics
+
+npm install --save-dev prettier eslint-config-prettier eslint-plugin-prettier
+```
+
 ## Development server
 
 To start a local development server, run:
