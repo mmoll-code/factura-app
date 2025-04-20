@@ -77,7 +77,7 @@ async def process_zip(file: UploadFile = File(...)):
     # print(f"📁 Carpeta seleccionada: {contenido_dir}")
     # print(f"🗂 Contenido: {os.listdir(contenido_dir)}")
 
-    run_processing_pipeline()    
+    run_processing_pipeline()
 
     # rows = []
 
