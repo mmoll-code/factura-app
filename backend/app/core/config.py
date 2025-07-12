@@ -13,6 +13,8 @@ OUTPUT_IMG_INVOICE = os.path.join(BASE_DIR, os.getenv("OUTPUT_IMG_INVOICE", ''))
 # 2nd step: extract the data images and convert
 PROCESSED_INVOICE = os.path.join(BASE_DIR, os.getenv("PROCESSED_INVOICE", ''))
 
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+
 print("INPUT_IMG_INVOICE", INPUT_IMG_INVOICE)
 print("OUTPUT_IMG_INVOICE", OUTPUT_IMG_INVOICE)
 print("PROCESSED_INVOICE", PROCESSED_INVOICE)

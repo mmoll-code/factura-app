@@ -6,6 +6,8 @@ import shutil, os
 from zipfile import ZipFile
 from pydantic import BaseModel, Field
 from typing import Any, Dict
+from app.utils.redis_client import get_redis
+import json
 
 router = APIRouter()
 
@@ -32,18 +34,23 @@ def download_excel():
     )
 
 
+class WebhookPayload(BaseModel):
+    event: str = Field(..., example="invoice_created")
+    payload: Dict[str, Any] = Field(..., example={"invoice_id": 123, "amount": 456.78})
+
 @router.post(
     "/webhook/",
     summary="Receive webhook events",
     description="Receives a webhook event with a JSON payload."
 )
-async def webhook(request: Request):
+async def webhook(payload: WebhookPayload):
     """
     Receives a webhook event.
     - **event**: The event type.
     - **payload**: The event payload as a JSON object.
     """
-    # Your processing logic here
-    payload = await request.json()
-    print("Webhook recibido:", payload)
+    print("Webhook recibido:", payload.model_dump())
+    # Store payload in Redis list
+    redis = await get_redis()
+    await redis.rpush("webhook_events", payload.model_dump_json())
     return {"status": "ok"}

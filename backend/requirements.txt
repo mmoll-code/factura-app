@@ -15,4 +15,4 @@ numpy
 opencv-python
 azure-ai-documentintelligence
 httpx==0.28.0
-aioredis==2.0.1
+redis>=4.2.0
