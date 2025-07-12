@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 def preprocess_image(image_bytes: bytes, output_path: str = "temp_invoice.jpg") -> str:
     # Convertimos los bytes a imagen de OpenCV
