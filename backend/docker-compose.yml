@@ -1,7 +1,7 @@
 services:
-  backend:
+  fastapi:
     build: .
-    container_name: facturas-backend
+    container_name: fastapi
     ports:
       - "8000:8000"
     environment:
@@ -20,7 +20,7 @@ services:
 
   nginx:
     image: nginx:stable-alpine
-    container_name: nginx_proxy
+    container_name: nginx
     ports:
       - "80:80"
       - "443:443"
@@ -28,7 +28,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro   # Para los certificados SSL
     depends_on:
-      - backend
+      - fastapi
     networks:
       - webnet
 
