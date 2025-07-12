@@ -6,8 +6,10 @@ import shutil, os
 from zipfile import ZipFile
 from pydantic import BaseModel, Field
 from typing import Any, Dict
-from app.utils.redis_client import get_redis
 import json
+from ..services.invoice_service import InvoiceService
+
+from .schemas import WhatsappWebhookMessage
 
 router = APIRouter()
 
@@ -39,11 +41,11 @@ class WebhookPayload(BaseModel):
     payload: Dict[str, Any] = Field(..., example={"invoice_id": 123, "amount": 456.78})
 
 @router.post(
-    "/webhook/",
+    "/webhook-waapi/",
     summary="Receive webhook events",
     description="Receives a webhook event with a JSON payload."
 )
-async def webhook(payload: WebhookPayload):
+async def webhook_waapi(payload: WhatsappWebhookMessage):
     """
     Receives a webhook event.
     - **event**: The event type.
@@ -51,6 +53,38 @@ async def webhook(payload: WebhookPayload):
     """
     print("Webhook recibido:", payload.model_dump())
     # Store payload in Redis list
-    redis = await get_redis()
-    await redis.rpush("webhook_events", payload.model_dump_json())
-    return {"status": "ok"}
+    # redis = await get_redis()
+    # await redis.rpush("webhook_events", payload.model_dump_json())
+
+
+    # data = await request.json()
+    # mensaje = data.get("message", "")
+    # numero = data.get("from", "")
+
+
+    try:
+        print(f"HELLO")
+        message = payload.message
+        print(f"message: {message}")
+        number = payload.origin
+        print(f"number: {number}")
+        
+        openai_api_key = os.getenv("MM_OPEN_API_KEY")
+        # openai_api_key = config.OPENAI_API_KEY
+        invoice_service = InvoiceService(openai_api_key=openai_api_key)
+        extracted_data = invoice_service.interpret_message(message)
+        
+        print(f"datos_extraidos: {extracted_data}")
+
+        # Acá seguiría validación y flujo
+        return {"status": "ok"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+
+
+
+
+
+    # return {"status": "ok"}
