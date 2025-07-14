@@ -18,10 +18,6 @@ from app.api.endpoints import router as api_router
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
-# Verificar que la API key se haya obtenido correctamente
-# print(f"API Key: {api_key}")  # Para depuración, eliminar en producción
-
-
 
 if api_key is None:
     raise ValueError("La API key de OpenAI no se encontró. Asegúrate de que el archivo .env contiene la clave correcta.")

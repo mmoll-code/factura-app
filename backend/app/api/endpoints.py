@@ -62,7 +62,7 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
         number = payload.origin
         print(f"number: {number}")
         
-        openai_api_key = os.getenv("MM_OPEN_API_KEY")
+        openai_api_key = os.getenv("OPEN_API_KEY")
         invoice_service = InvoiceService(openai_api_key=openai_api_key)
         extracted_data = invoice_service.interpret_message(message)
 
