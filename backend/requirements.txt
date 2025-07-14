@@ -16,3 +16,4 @@ opencv-python
 azure-ai-documentintelligence
 httpx==0.28.0
 redis>=4.2.0
+pydantic-settings
