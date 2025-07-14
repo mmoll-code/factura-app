@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, Request, UploadFile
+from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import FileResponse
 from app.core import config
 from app.services.convert import run_processing_pipeline
@@ -6,7 +6,8 @@ import shutil, os
 from zipfile import ZipFile
 from pydantic import BaseModel, Field
 from typing import Any, Dict
-import json
+
+from ..services.billeruy_service import BillerService
 from ..services.invoice_service import InvoiceService
 
 from .schemas import WhatsappWebhookMessage
@@ -56,35 +57,52 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
     # redis = await get_redis()
     # await redis.rpush("webhook_events", payload.model_dump_json())
 
-
-    # data = await request.json()
-    # mensaje = data.get("message", "")
-    # numero = data.get("from", "")
-
-
     try:
-        print(f"HELLO")
         message = payload.message
-        print(f"message: {message}")
         number = payload.origin
         print(f"number: {number}")
         
         openai_api_key = os.getenv("MM_OPEN_API_KEY")
-        # openai_api_key = config.OPENAI_API_KEY
         invoice_service = InvoiceService(openai_api_key=openai_api_key)
         extracted_data = invoice_service.interpret_message(message)
-        
+
         print(f"datos_extraidos: {extracted_data}")
 
-        # Acá seguiría validación y flujo
-        return {"status": "ok"}
+        # Load Biller settings from env
+        biller_service = BillerService()
+
+        branch_id = int(os.getenv("BILLER_API_BRANCH_ID", "1"))
+        print(f"branch_id: {branch_id}")
+
+        items = extracted_data["items"]
+        if len(items) == 0:
+            items = [
+                {
+                    "cantidad": 1,
+                    "concepto": "Servicios de desarrollo de software",
+                    "precio": 1000,
+                    "indicador_facturacion": 3
+                }
+            ]
+        print(f"items: {items}")
+
+        biller_payload = biller_service.build_min_comprobante_payload(
+            tipo_comprobante=111,
+            forma_pago=1,
+            sucursal=branch_id,
+            moneda="UYU",
+            cliente_razon_social=extracted_data["razon_social"],
+            cliente_tipo_documento=extracted_data["tipo_documento"],
+            cliente_documento=extracted_data["documento"],
+            cliente_direccion=extracted_data["direccion"],
+            cliente_pais=extracted_data.get("pais", "UY"),
+            items=items
+        )
+
+        biller_result = await biller_service.crear_comprobante(biller_payload)
+        print(f"Biller API result: {biller_result}")
+
+        return {"status": "ok", "biller_result": biller_result}
     except Exception as e:
+        print(f"Error: {e}")
         return {"error": str(e)}
-
-
-
-
-
-
-
-    # return {"status": "ok"}
