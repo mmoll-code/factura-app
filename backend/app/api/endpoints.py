@@ -58,8 +58,8 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
     # await redis.rpush("webhook_events", payload.model_dump_json())
 
     try:
-        message = payload.message
-        number = payload.origin
+        message = payload.body
+        number = payload.from_
         print(f"number: {number}")
         
         openai_api_key = os.getenv("OPEN_API_KEY")

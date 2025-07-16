@@ -8,13 +8,21 @@ class WebhookRequest(BaseModel):
 
 
 class WhatsappWebhookMessage(BaseModel):
-    event: str = Field(..., description="Tipo de evento recibido desde WaApi, típicamente 'message'")
-    # event: str = Field(..., description="message")
-    origin: str = Field(..., description="Número de WhatsApp del usuario que envió el mensaje")
-    # origin: str = Field(..., description="099747179")
-    message: str = Field(..., description="Mensaje de texto enviado por el usuario")
-    # message: str = Field(..., description="MMOLLCODE SRL\nRUT 219125030014\nDoctor Manuel Albo 2656\nSaludos Martín Moll.\n")
+    event: str = Field(None, description="Tipo de evento recibido desde WaApi, típicamente 'message'")
+    session: str = Field(None, description="Nombre de la sesión de WhatsApp")
+    id: str = Field(None, description="ID del mensaje")
+    body: str = Field(None, description="Cuerpo del mensaje")
+    from_: str = Field(None, alias="from", description="Número de WhatsApp del remitente")
+    to: str = Field(None, description="Número de WhatsApp del destinatario")
+    type: str = Field(None, description="Tipo de mensaje (chat, image, etc)")
+    timestamp: int = Field(None, description="Timestamp del mensaje")
+    isGroupMsg: bool = Field(None, description="Indica si es mensaje de grupo")
+    chatId: str = Field(None, description="ID del chat")
+    # Puedes agregar más campos según lo que recibas normalmente
 
+    class Config:
+        extra = "allow"  # Permite campos adicionales no definidos explícitamente
+        allow_population_by_field_name = True
 
 
 # {
