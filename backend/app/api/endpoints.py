@@ -12,6 +12,7 @@ from ..services.invoice_service import InvoiceService
 from ..services.chat_memory import ChatMemoryService
 from app.clients.openai_client.base_client import OpenAIBaseClient
 import httpx
+from ..services.conversational_ai_service import ConversationalAIService
 
 from .schemas import WhatsappWebhookMessage
 
@@ -75,21 +76,9 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
             # Get chat history
             history = await chat_memory.get_history(payload.chatId, limit=20)
 
-            # Format history for OpenAI
-            def format_for_openai(history):
-                messages = []
-                for msg in history:
-                    if msg["from"] == payload.from_:
-                        messages.append({"role": "user", "content": msg["body"]})
-                    else:
-                        messages.append({"role": "assistant", "content": msg["body"]})
-                return messages
-
-            openai_messages = format_for_openai(history)
-
-            # Call OpenAI
-            openai_client = OpenAIBaseClient(api_key=config.OPENAPI_KEY)
-            openai_response = openai_client.chat_completion(openai_messages)
+            # Conversational AI Service
+            ai_service = ConversationalAIService(openai_api_key=config.OPENAPI_KEY)
+            openai_response = ai_service.get_ai_response(history, payload.from_)
 
             # Save OpenAI response to chat memory
             ai_message = {
