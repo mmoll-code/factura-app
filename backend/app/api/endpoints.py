@@ -13,6 +13,7 @@ from ..services.chat_memory import ChatMemoryService
 from app.clients.openai_client.base_client import OpenAIBaseClient
 import httpx
 from ..services.conversational_ai_service import ConversationalAIService
+from ..services.whatsapp_messenger import WhatsappMessenger
 
 from .schemas import WhatsappWebhookMessage
 
@@ -92,26 +93,22 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
             }
             await chat_memory.add_message(payload.chatId, ai_message)
 
-            # Send response via wppconnect-server
+            # Whatsapp Messenger
             wppconnect_url = os.getenv("WPPCONNECT_URL", "http://wppconnect:21465")
             wppconnect_token = os.getenv("WPPCONNECT_TOKEN", "changeme")
             session = payload.session or os.getenv("WPPCONNECT_SESSION", "default")
-            send_message_url = f"{wppconnect_url}/api/{session}/send-message"
-            headers = {
-                "Authorization": f"Bearer {wppconnect_token}",
-                "Content-Type": "application/json"
-            }
-            data = {
-                "phone": payload.from_,
-                "message": openai_response,
-                "isGroup": payload.isGroupMsg or False
-            }
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(send_message_url, headers=headers, json=data)
-                if resp.status_code >= 400:
-                    print(f"Error sending WhatsApp message: {resp.text}")
-                    return {"status": "error", "detail": resp.text}
-
+            messenger = WhatsappMessenger(
+                base_url=wppconnect_url,
+                token=wppconnect_token,
+                session=session
+            )
+            sent = await messenger.send_message(
+                phone=payload.from_,
+                message=openai_response,
+                is_group=payload.isGroupMsg or False
+            )
+            if not sent:
+                return {"status": "error", "detail": "Failed to send WhatsApp message"}
             return {"status": "ok"}
         else:
             print(f"Ignored event: {payload.event}")
