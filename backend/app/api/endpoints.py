@@ -9,6 +9,9 @@ from typing import Any, Dict
 
 from ..services.billeruy_service import BillerService
 from ..services.invoice_service import InvoiceService
+from ..services.chat_memory import ChatMemoryService
+from app.clients.openai_client.base_client import OpenAIBaseClient
+import httpx
 
 from .schemas import WhatsappWebhookMessage
 
@@ -52,57 +55,124 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
     - **event**: The event type.
     - **payload**: The event payload as a JSON object.
     """
-    print("Webhook recibido:", payload.model_dump())
-    # Store payload in Redis list
-    # redis = await get_redis()
-    # await redis.rpush("webhook_events", payload.model_dump_json())
-
     try:
-        message = payload.body
-        number = payload.from_
-        print(f"number: {number}")
-        
-        openai_api_key = os.getenv("OPEN_API_KEY")
-        invoice_service = InvoiceService(openai_api_key=openai_api_key)
-        extracted_data = invoice_service.interpret_message(message)
+        if payload.event == "onmessage":
+            relevant_data = {
+                "from": payload.from_,
+                "to": payload.to,
+                "body": payload.body,
+                "timestamp": payload.timestamp,
+                "chatId": payload.chatId,
+                "type": payload.type,
+                "isGroupMsg": payload.isGroupMsg,
+            }
+            print("Relevant message data:", relevant_data)
 
-        print(f"datos_extraidos: {extracted_data}")
+            # Save message to chat memory (Redis)
+            chat_memory = ChatMemoryService(redis_url=config.REDIS_URL)
+            await chat_memory.add_message(payload.chatId, relevant_data)
+
+            # Get chat history
+            history = await chat_memory.get_history(payload.chatId, limit=20)
+
+            # Format history for OpenAI
+            def format_for_openai(history):
+                messages = []
+                for msg in history:
+                    if msg["from"] == payload.from_:
+                        messages.append({"role": "user", "content": msg["body"]})
+                    else:
+                        messages.append({"role": "assistant", "content": msg["body"]})
+                return messages
+
+            openai_messages = format_for_openai(history)
+
+            # Call OpenAI
+            openai_client = OpenAIBaseClient(api_key=config.OPENAPI_KEY)
+            openai_response = openai_client.chat_completion(openai_messages)
+
+            # Save OpenAI response to chat memory
+            ai_message = {
+                "from": payload.to,
+                "to": payload.from_,
+                "body": openai_response,
+                "timestamp": int(__import__('time').time()),
+                "chatId": payload.chatId,
+                "type": "chat",
+                "isGroupMsg": False
+            }
+            await chat_memory.add_message(payload.chatId, ai_message)
+
+            # Send response via wppconnect-server
+            wppconnect_url = os.getenv("WPPCONNECT_URL", "http://wppconnect:21465")
+            wppconnect_token = os.getenv("WPPCONNECT_TOKEN", "changeme")
+            session = payload.session or os.getenv("WPPCONNECT_SESSION", "default")
+            send_message_url = f"{wppconnect_url}/api/{session}/send-message"
+            headers = {
+                "Authorization": f"Bearer {wppconnect_token}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "phone": payload.from_,
+                "message": openai_response,
+                "isGroup": payload.isGroupMsg or False
+            }
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(send_message_url, headers=headers, json=data)
+                if resp.status_code >= 400:
+                    print(f"Error sending WhatsApp message: {resp.text}")
+                    return {"status": "error", "detail": resp.text}
+
+            return {"status": "ok"}
+        else:
+            print(f"Ignored event: {payload.event}")
+
+        # print("Webhook recibido:", payload.model_dump())
+        # Store payload in Redis list
+        # redis = await get_redis()
+        # await redis.rpush("webhook_events", payload.model_dump_json())
+
+        # openai_api_key = os.getenv("OPEN_API_KEY")
+        # invoice_service = InvoiceService(openai_api_key=openai_api_key)
+        # extracted_data = invoice_service.interpret_message(message)
+
+        # print(f"datos_extraidos: {extracted_data}")
 
         # Load Biller settings from env
-        biller_service = BillerService()
+        # biller_service = BillerService()
 
-        branch_id = int(os.getenv("BILLER_API_BRANCH_ID", "1"))
-        print(f"branch_id: {branch_id}")
+        # branch_id = int(os.getenv("BILLER_API_BRANCH_ID", "1"))
+        # print(f"branch_id: {branch_id}")
 
-        items = extracted_data["items"]
-        if len(items) == 0:
-            items = [
-                {
-                    "cantidad": 1,
-                    "concepto": "Servicios de desarrollo de software",
-                    "precio": 1000,
-                    "indicador_facturacion": 3
-                }
-            ]
-        print(f"items: {items}")
+        # items = extracted_data["items"]
+        # if len(items) == 0:
+        #     items = [
+        #         {
+        #             "cantidad": 1,
+        #             "concepto": "Servicios de desarrollo de software",
+        #             "precio": 1000,
+        #             "indicador_facturacion": 3
+        #         }
+        #     ]
+        # print(f"items: {items}")
 
-        biller_payload = biller_service.build_min_comprobante_payload(
-            tipo_comprobante=111,
-            forma_pago=1,
-            sucursal=branch_id,
-            moneda="UYU",
-            cliente_razon_social=extracted_data["razon_social"],
-            cliente_tipo_documento=extracted_data["tipo_documento"],
-            cliente_documento=extracted_data["documento"],
-            cliente_direccion=extracted_data["direccion"],
-            cliente_pais=extracted_data.get("pais", "UY"),
-            items=items
-        )
+        # biller_payload = biller_service.build_min_comprobante_payload(
+        #     tipo_comprobante=111,
+        #     forma_pago=1,
+        #     sucursal=branch_id,
+        #     moneda="UYU",
+        #     cliente_razon_social=extracted_data["razon_social"],
+        #     cliente_tipo_documento=extracted_data["tipo_documento"],
+        #     cliente_documento=extracted_data["documento"],
+        #     cliente_direccion=extracted_data["direccion"],
+        #     cliente_pais=extracted_data.get("pais", "UY"),
+        #     items=items
+        # )
 
-        biller_result = await biller_service.crear_comprobante(biller_payload)
-        print(f"Biller API result: {biller_result}")
+        # biller_result = await biller_service.crear_comprobante(biller_payload)
+        # print(f"Biller API result: {biller_result}")
 
-        return {"status": "ok", "biller_result": biller_result}
+        # return {"status": "ok", "biller_result": biller_result}
     except Exception as e:
         print(f"Error: {e}")
         return {"error": str(e)}
