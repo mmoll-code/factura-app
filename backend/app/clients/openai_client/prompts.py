@@ -15,3 +15,12 @@ Devolveme solo un JSON válido con los campos mencionados, sin explicaciones adi
 Texto:
 {message}
 """
+
+INTENT_DETECTION_PROMPT = """
+Analizá el siguiente mensaje y respondé solo con un JSON válido con el campo:
+- intencion: puede ser "crear_comprobante", "consultar_estado", "ayuda", "otro".
+No agregues explicaciones ni texto adicional.
+
+Mensaje:
+{message}
+"""

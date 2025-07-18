@@ -30,6 +30,24 @@ class ChatMemoryService:
         key = f"chat_history:{chat_id}"
         await self._redis.delete(key)
 
+    async def set_state(self, chat_id: str, state: Dict[str, Any]) -> None:
+        await self.connect()
+        key = f"chat_state:{chat_id}"
+        await self._redis.set(key, json.dumps(state))
+
+    async def get_state(self, chat_id: str) -> Optional[Dict[str, Any]]:
+        await self.connect()
+        key = f"chat_state:{chat_id}"
+        value = await self._redis.get(key)
+        if value:
+            return json.loads(value)
+        return None
+
+    async def clear_state(self, chat_id: str) -> None:
+        await self.connect()
+        key = f"chat_state:{chat_id}"
+        await self._redis.delete(key)
+
     async def close(self):
         if self._redis:
             await self._redis.close()

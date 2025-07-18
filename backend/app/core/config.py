@@ -13,7 +13,7 @@ OUTPUT_IMG_INVOICE = os.path.join(BASE_DIR, os.getenv("OUTPUT_IMG_INVOICE", ''))
 # 2nd step: extract the data images and convert
 PROCESSED_INVOICE = os.path.join(BASE_DIR, os.getenv("PROCESSED_INVOICE", ''))
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 BILLER_API_BASE_URL = os.getenv("BILLER_API_BASE_URL", "https://api.biller.uy")
 BILLER_API_TOKEN = os.getenv("BILLER_API_TOKEN", "1234567890")
