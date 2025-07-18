@@ -7,10 +7,12 @@ from zipfile import ZipFile
 from pydantic import BaseModel, Field
 from typing import Any, Dict
 
+from ..clients.openai_client.invoice_extractor import OpenAIIntentDetector, OpenAIInvoiceExtractor
+
 from ..services.billeruy_service import BillerService
 from ..services.invoice_service import InvoiceService
 from ..services.chat_memory import ChatMemoryService
-from app.clients.openai_client.base_client import OpenAIBaseClient
+from ..clients.openai_client.base_client import OpenAIBaseClient
 import httpx
 from ..services.conversational_ai_service import ConversationalAIService
 from ..services.whatsapp_messenger import WhatsappMessenger
@@ -81,11 +83,44 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
             ai_service = ConversationalAIService(openai_api_key=config.OPENAPI_KEY)
             openai_response = ai_service.get_ai_response(history, payload.from_)
 
-            # Save OpenAI response to chat memory
+            intent_detector = OpenAIIntentDetector(api_key=config.OPENAPI_KEY)
+            intent = intent_detector.detect_intent(payload.body)
+            print(f"intent: {intent}")
+
+            if intent == "crear_comprobante":
+                extractor = OpenAIInvoiceExtractor(api_key=config.OPENAPI_KEY)
+                invoice_data = extractor.extract_invoice_data(payload.body)
+                print(f"invoice_data: {invoice_data}")
+                
+                try:
+                    biller_service = BillerService()
+                    # Use build_min_comprobante_payload to create proper payload
+                    comprobante_payload = biller_service.build_min_comprobante_payload(
+                        tipo_comprobante=111,
+                        forma_pago=1,
+                        sucursal=int(os.getenv("BILLER_API_BRANCH_ID", "1")),
+                        moneda="UYU",
+                        cliente_razon_social=invoice_data.get("razon_social", "Cliente"),
+                        cliente_tipo_documento=invoice_data.get("tipo_documento", 3),
+                        cliente_documento=invoice_data.get("documento", "12345678"),
+                        cliente_direccion=invoice_data.get("direccion", "Calle 123"),
+                        cliente_pais=invoice_data.get("pais", "UY"),
+                        items=invoice_data.get("items", [])
+                    )
+                    
+                    biller_result = await biller_service.crear_comprobante(comprobante_payload)
+                    response_message = f"Comprobante emitido con éxito. Nro: {biller_result.get('numero', 'N/A')}"
+                except Exception as e:
+                    response_message = f"Ocurrió un error al emitir el comprobante: {str(e)}"
+            else:
+                # Use conversational AI response
+                response_message = openai_response
+
+            # Save response to chat memory
             ai_message = {
                 "from": payload.to,
                 "to": payload.from_,
-                "body": openai_response,
+                "body": response_message,
                 "timestamp": int(__import__('time').time()),
                 "chatId": payload.chatId,
                 "type": "chat",
@@ -97,68 +132,33 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
             wppconnect_url = os.getenv("WPPCONNECT_URL", "http://wppconnect:21465")
             wppconnect_token = os.getenv("WPPCONNECT_TOKEN", "changeme")
             session = payload.session or os.getenv("WPPCONNECT_SESSION", "default")
-            messenger = WhatsappMessenger(
-                base_url=wppconnect_url,
-                token=wppconnect_token,
-                session=session
-            )
-            sent = await messenger.send_message(
-                phone=payload.from_,
-                message=openai_response,
-                is_group=payload.isGroupMsg or False
-            )
-            if not sent:
-                return {"status": "error", "detail": "Failed to send WhatsApp message"}
-            return {"status": "ok"}
+            
+            print(f"WhatsApp config - URL: {wppconnect_url}, Token: {'*' * len(wppconnect_token) if wppconnect_token else 'None'}, Session: {session}")
+            
+            try:
+                messenger = WhatsappMessenger(
+                    base_url=wppconnect_url,
+                    token=wppconnect_token,
+                    session=session
+                )
+                print(f"Sending WhatsApp message to: {payload.from_}")
+                sent = await messenger.send_message(
+                    phone=payload.from_,
+                    message=response_message,
+                    is_group=payload.isGroupMsg or False
+                )
+                if not sent:
+                    print("Warning: WhatsApp message failed to send")
+                    return {"status": "ok", "warning": "Comprobante creado pero no se pudo enviar notificación"}
+                print("WhatsApp message sent successfully")
+            except Exception as whatsapp_error:
+                print(f"WhatsApp error: {whatsapp_error}")
+                # Don't fail the whole request if WhatsApp fails
+                return {"status": "ok", "warning": f"Comprobante creado pero error en WhatsApp: {whatsapp_error}"}
+
         else:
             print(f"Ignored event: {payload.event}")
 
-        # print("Webhook recibido:", payload.model_dump())
-        # Store payload in Redis list
-        # redis = await get_redis()
-        # await redis.rpush("webhook_events", payload.model_dump_json())
-
-        # openai_api_key = os.getenv("OPEN_API_KEY")
-        # invoice_service = InvoiceService(openai_api_key=openai_api_key)
-        # extracted_data = invoice_service.interpret_message(message)
-
-        # print(f"datos_extraidos: {extracted_data}")
-
-        # Load Biller settings from env
-        # biller_service = BillerService()
-
-        # branch_id = int(os.getenv("BILLER_API_BRANCH_ID", "1"))
-        # print(f"branch_id: {branch_id}")
-
-        # items = extracted_data["items"]
-        # if len(items) == 0:
-        #     items = [
-        #         {
-        #             "cantidad": 1,
-        #             "concepto": "Servicios de desarrollo de software",
-        #             "precio": 1000,
-        #             "indicador_facturacion": 3
-        #         }
-        #     ]
-        # print(f"items: {items}")
-
-        # biller_payload = biller_service.build_min_comprobante_payload(
-        #     tipo_comprobante=111,
-        #     forma_pago=1,
-        #     sucursal=branch_id,
-        #     moneda="UYU",
-        #     cliente_razon_social=extracted_data["razon_social"],
-        #     cliente_tipo_documento=extracted_data["tipo_documento"],
-        #     cliente_documento=extracted_data["documento"],
-        #     cliente_direccion=extracted_data["direccion"],
-        #     cliente_pais=extracted_data.get("pais", "UY"),
-        #     items=items
-        # )
-
-        # biller_result = await biller_service.crear_comprobante(biller_payload)
-        # print(f"Biller API result: {biller_result}")
-
-        # return {"status": "ok", "biller_result": biller_result}
     except Exception as e:
         print(f"Error: {e}")
         return {"error": str(e)}

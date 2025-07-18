@@ -10,7 +10,7 @@ class BillerService():
     async def crear_comprobante(self, data: ComprobanteCrearPayload):
         payload = data.model_dump(exclude_none=True, mode="json")
         print(f"PAYLOAD data: {payload}")
-        return await self.biller_client.post("/v2/comprobantes/crear", payload)
+        return await self.biller_client.post("v2/comprobantes/crear", payload)
     
     
     def build_biller_payload(
@@ -67,3 +67,42 @@ class BillerService():
             cliente=cliente,
             items=item_objs
         )
+
+
+
+## Cear Comprobante example payload:
+# {
+#     "tipo_comprobante": 101,
+#     "forma_pago": 1,
+#     "sucursal": 636,
+#     "moneda": "UYU",
+#     "montos_brutos": 0,
+#     "cliente": "-",
+#     "items": [
+#         {
+#         	"codigo": "esteCodigo",
+#             "cantidad": 1,
+#             "concepto": "Pelota de fútbol",
+#             "precio": 200,
+#             "indicador_facturacion": 3
+#         }
+#     ]
+# }
+
+# {   
+#     'tipo_comprobante': 111, 
+#     'forma_pago': 1, 
+#     'sucursal': 636, 
+#     'moneda': 'UYU', 
+#     'cliente': {
+#         'tipo_documento': 2, 
+#         'documento': '219125030014', 
+#         'razon_social': 'mmollcode srl', 
+#         'sucursal': {
+#             'direccion': 'Calle 123', 
+#             'ciudad': 'Montevideo', 
+#             'departamento': 'Montevideo', 
+#             'pais': 'UY'}
+#         }, 
+#     'items': [{'cantidad': 1, 'concepto': 'servicios de consultoría', 'precio': 1500.0, 'indicador_facturacion': 3}]
+# }
