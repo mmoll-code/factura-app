@@ -1,5 +1,5 @@
 from ..clients.billeruy_client.client import BillerAPIClient
-from app.clients.billeruy_client.schemas import (
+from ..clients.billeruy_client.schemas import (
     ComprobanteCrearPayload, ClienteInfo, SucursalInfo, ItemInfo
 )
 import os

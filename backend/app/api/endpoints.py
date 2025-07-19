@@ -118,15 +118,15 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
                     )
                     
                     response_message = f"""Comprobante emitido con éxito ✅                     
-                            📄 **Detalles del comprobante:**
-                            • ID: {comprobante_id}
-                            • Serie: {comprobante_serie}
-                            • Número: {comprobante_numero}
-                            • Hash: {comprobante_hash}
+📄 **Detalles del comprobante:**
+• ID: {comprobante_id}
+• Serie: {comprobante_serie}
+• Número: {comprobante_numero}
+• Hash: {comprobante_hash}
 
-                            {f"📁 PDF guardado: {pdf_info['pdf_filename']}" if pdf_info else "⚠️ PDF no pudo descargarse"}
+{f"📁 PDF guardado: {pdf_info['pdf_filename']}" if pdf_info else "⚠️ PDF no pudo descargarse"}
 
-                            El comprobante ha sido registrado correctamente en el sistema."""
+El comprobante ha sido registrado correctamente en el sistema."""
                     
                 except Exception as e:
                     response_message = f"Ocurrió un error al emitir el comprobante: {str(e)}"
@@ -147,9 +147,9 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
             await chat_memory.add_message(payload.chatId, ai_message)
 
             # Whatsapp Messenger
-            wppconnect_url = os.getenv("WPPCONNECT_URL", "http://wppconnect:21465")
-            wppconnect_token = os.getenv("WPPCONNECT_TOKEN", "changeme")
-            session = payload.session or os.getenv("WPPCONNECT_SESSION", "default")
+            wppconnect_url = config.WPPCONNECT_URL
+            wppconnect_token = config.WPPCONNECT_TOKEN
+            session = payload.session or config.WPPCONNECT_SESSION
             
             print(f"WhatsApp config - URL: {wppconnect_url}, Token: {'*' * len(wppconnect_token) if wppconnect_token else 'None'}, Session: {session}")
             

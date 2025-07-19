@@ -1,4 +1,5 @@
 import os
+from app.core import config
 from app.clients.billeruy_client.schemas import (
     ComprobanteCrearPayload, ClienteInfo, SucursalInfo, ItemInfo
 )
@@ -23,7 +24,7 @@ class ComprobantePayloadFactory:
             invoice_data: Datos extraídos por OpenAI (razon_social, documento, etc.)
             tipo_comprobante: Tipo de comprobante (default: 111 = e-Factura)
             forma_pago: Forma de pago (default: 1 = contado)
-            sucursal: ID de sucursal (default: desde env BILLER_API_BRANCH_ID)
+            sucursal: ID de sucursal (default: desde config.BILLER_API_BRANCH_ID)
             moneda: Moneda (default: UYU)
             **kwargs: Otros parámetros opcionales
             
@@ -31,9 +32,9 @@ class ComprobantePayloadFactory:
             ComprobanteCrearPayload listo para enviar a la API
         """
         
-        # Get default sucursal from environment if not provided
+        # Get default sucursal from config if not provided
         if sucursal is None:
-            sucursal = int(os.getenv("BILLER_API_BRANCH_ID", "1"))
+            sucursal = config.BILLER_API_BRANCH_ID
         
         # Build cliente info
         cliente = ClienteInfo(

@@ -13,12 +13,15 @@ class BillerAPIClient:
         if not self.base_url:
             raise ValueError("BILLER_API_BASE_URL environment variable is required")
         if not self.token:
-            raise ValueError("BILLER_API_TOKEN environment variable is required")        
+            raise ValueError("BILLER_API_TOKEN environment variable is required")
+            
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
-        }        
-
+        }
+        
+        # Initialize persistent client as None
+        self._client = None
 
     async def _get_client(self):
         """Get or create persistent HTTP client with cookie support"""
