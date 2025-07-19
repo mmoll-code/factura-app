@@ -16,6 +16,7 @@ from ..clients.openai_client.base_client import OpenAIBaseClient
 import httpx
 from ..services.conversational_ai_service import ConversationalAIService
 from ..services.whatsapp_messenger import WhatsappMessenger
+from ..factories.comprobante_factory import ComprobantePayloadFactory
 
 from .schemas import WhatsappWebhookMessage
 
@@ -94,22 +95,39 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
                 
                 try:
                     biller_service = BillerService()
-                    # Use build_min_comprobante_payload to create proper payload
-                    comprobante_payload = biller_service.build_min_comprobante_payload(
+                    
+                    # Use factory to build payload
+                    comprobante_payload = ComprobantePayloadFactory.build_from_invoice_data(
+                        invoice_data=invoice_data,
                         tipo_comprobante=111,
                         forma_pago=1,
-                        sucursal=int(os.getenv("BILLER_API_BRANCH_ID", "1")),
-                        moneda="UYU",
-                        cliente_razon_social=invoice_data.get("razon_social", "Cliente"),
-                        cliente_tipo_documento=invoice_data.get("tipo_documento", 3),
-                        cliente_documento=invoice_data.get("documento", "12345678"),
-                        cliente_direccion=invoice_data.get("direccion", "Calle 123"),
-                        cliente_pais=invoice_data.get("pais", "UY"),
-                        items=invoice_data.get("items", [])
+                        moneda="UYU"
                     )
                     
                     biller_result = await biller_service.crear_comprobante(comprobante_payload)
-                    response_message = f"Comprobante emitido con éxito. Nro: {biller_result.get('numero', 'N/A')}"
+                    
+                    # Extract comprobante info from successful response
+                    comprobante_id = biller_result.get('id', 'N/A')
+                    comprobante_serie = biller_result.get('serie', 'N/A') 
+                    comprobante_numero = biller_result.get('numero', 'N/A')
+                    comprobante_hash = biller_result.get('hash', 'N/A')
+                    
+                    # Download and save PDF using BillerService
+                    pdf_info = await biller_service.descargar_y_guardar_pdf(
+                        comprobante_id, comprobante_serie, comprobante_numero
+                    )
+                    
+                    response_message = f"""Comprobante emitido con éxito ✅                     
+                            📄 **Detalles del comprobante:**
+                            • ID: {comprobante_id}
+                            • Serie: {comprobante_serie}
+                            • Número: {comprobante_numero}
+                            • Hash: {comprobante_hash}
+
+                            {f"📁 PDF guardado: {pdf_info['pdf_filename']}" if pdf_info else "⚠️ PDF no pudo descargarse"}
+
+                            El comprobante ha sido registrado correctamente en el sistema."""
+                    
                 except Exception as e:
                     response_message = f"Ocurrió un error al emitir el comprobante: {str(e)}"
             else:

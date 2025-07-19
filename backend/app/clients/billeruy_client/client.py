@@ -13,22 +13,12 @@ class BillerAPIClient:
         if not self.base_url:
             raise ValueError("BILLER_API_BASE_URL environment variable is required")
         if not self.token:
-            raise ValueError("BILLER_API_TOKEN environment variable is required")
-            
-        # Validate URL format
-        if not (self.base_url.startswith("http://") or self.base_url.startswith("https://")):
-            raise ValueError(f"BILLER_API_BASE_URL must start with http:// or https://. Got: {self.base_url}")
-            
-        print(f"BillerAPIClient initialized with base_url: {self.base_url}")
-        print(f"All environment variables: BILLER_API_BASE_URL={self.base_url}, BILLER_API_TOKEN={'*' * (len(self.token) if self.token else 0)}")
-        
+            raise ValueError("BILLER_API_TOKEN environment variable is required")        
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
-        }
-        
-        # Create persistent client with cookies support
-        self._client = None
+        }        
+
 
     async def _get_client(self):
         """Get or create persistent HTTP client with cookie support"""
@@ -70,21 +60,8 @@ class BillerAPIClient:
                 print(f"BillerAPIError: {error_message}")
                 raise BillerAPIError(response.status_code, error_message)
             return response.json()
-        except httpx.ConnectError as e:
-            print(f"Connection error to {url}: {e}")
-            raise BillerAPIError(0, f"No se pudo conectar al servidor Biller: {e}")
-        except httpx.TimeoutException as e:
-            print(f"Timeout error to {url}: {e}")
-            raise BillerAPIError(0, f"Timeout al conectar con el servidor Biller: {e}")
-        except OSError as e:
-            if e.errno == 8:  # nodename nor servname provided, or not known
-                print(f"DNS resolution error for {url}: {e}")
-                raise BillerAPIError(0, f"Error de DNS: No se pudo resolver el hostname '{self.base_url}'. Verifica la URL y la conectividad de red.")
-            else:
-                print(f"OS error: {e}")
-                raise BillerAPIError(0, f"Error del sistema: {e}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            print(f"Error in POST request: {e}")
             raise
 
     async def test_connection(self):
@@ -131,6 +108,52 @@ class BillerAPIClient:
         
         print("Testing with Postman payload...")
         return await self.post("/v2/comprobantes/crear", test_payload)
+
+    async def get_comprobante_pdf(self, comprobante_id: int) -> bytes:
+        """Get PDF of comprobante by ID"""
+        url = f"{self.base_url}/v2/comprobantes/pdf?id={comprobante_id}"
+        print(f"Getting PDF from: {url}")
+        
+        try:
+            client = await self._get_client()
+            response = await client.get(url, headers=self.headers)
+            
+            print(f"PDF Response status: {response.status_code}")
+            print(f"PDF Response content-type: {response.headers.get('content-type', 'unknown')}")
+            print(f"PDF Response content-length: {response.headers.get('content-length', 'unknown')}")
+            
+            if response.status_code >= 400:
+                error_message = self._parse_error_response(response.text)
+                print(f"BillerAPIError getting PDF: {error_message}")
+                raise BillerAPIError(response.status_code, error_message)
+            
+            # Validate that we got actual PDF content
+            content = response.content
+            print(f"Downloaded content size: {len(content)} bytes")
+            
+            # Check if it's a valid PDF (should start with %PDF)
+            if content[:4] == b'%PDF':
+                print("✅ Valid PDF header detected")
+            else:
+                print(f"⚠️ Invalid PDF header. First 50 bytes: {content[:50]}")
+                # Try to decode as text to see if it's an error message
+                try:
+                    text_content = content.decode('utf-8')
+                    print(f"Content as text: {text_content[:200]}...")
+                    raise BillerAPIError(500, f"Received invalid PDF content: {text_content[:200]}")
+                except UnicodeDecodeError:
+                    print("Content is binary but not a valid PDF")
+                    raise BillerAPIError(500, "Received invalid PDF content")
+            
+            # Additional validation - check file size
+            if len(content) < 100:
+                print(f"⚠️ PDF file suspiciously small: {len(content)} bytes")
+            
+            return content
+            
+        except Exception as e:
+            print(f"Error getting PDF: {e}")
+            raise
 
     def _parse_error_response(self, error_text: str) -> str:
         """Parse API error response and return a user-friendly message"""

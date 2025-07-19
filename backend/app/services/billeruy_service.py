@@ -2,6 +2,7 @@ from ..clients.billeruy_client.client import BillerAPIClient
 from app.clients.billeruy_client.schemas import (
     ComprobanteCrearPayload, ClienteInfo, SucursalInfo, ItemInfo
 )
+import os
 
 class BillerService():
     def __init__(self):
@@ -12,30 +13,7 @@ class BillerService():
         print(f"PAYLOAD data: {payload}")
         return await self.biller_client.post("v2/comprobantes/crear", payload)
     
-    
-    def build_biller_payload(
-        nombre_fantasia: str,
-        tipo_documento: int,
-        documento: str,
-        direccion: str,
-        ciudad: str,
-        departamento: str,
-        pais: str = "UY"
-    ) -> dict:
-        
-        print(f"build_biller_payload: {nombre_fantasia}, {tipo_documento}, {documento}, {direccion}, {ciudad}, {departamento}, {pais}")
-        return {
-            "nombre_fantasia": nombre_fantasia,
-            "tipo_documento": tipo_documento,
-            "documento": documento,
-            "direccion": direccion,
-            "ciudad": ciudad,
-            "departamento": departamento,
-            "pais": pais
-        }
-    
-    
-    def build_min_comprobante_payload(
+    def build_crear_comprobante_payload(
         self,
         tipo_comprobante: int,
         forma_pago: int,
@@ -68,6 +46,66 @@ class BillerService():
             items=item_objs
         )
 
+    async def descargar_y_guardar_pdf(self, comprobante_id, comprobante_serie, comprobante_numero):
+        """
+        Downloads and saves PDF locally for a comprobante
+        
+        Args:
+            comprobante_id: ID of the comprobante
+            comprobante_serie: Serie of the comprobante  
+            comprobante_numero: Numero of the comprobante
+            
+        Returns:
+            dict with PDF info or None if failed
+        """
+        pdf_filename = None
+        try:
+            print(f"Attempting to download PDF for comprobante ID: {comprobante_id}")
+            pdf_content = await self.obtener_comprobante_pdf(comprobante_id)
+            
+            # Create comprobantes directory if it doesn't exist
+            comprobantes_dir = os.path.join(os.getcwd(), "comprobantes")
+            os.makedirs(comprobantes_dir, exist_ok=True)
+            
+            # Save PDF with descriptive filename
+            pdf_filename = f"comprobante_{comprobante_serie}_{comprobante_numero}_{comprobante_id}.pdf"
+            pdf_path = os.path.join(comprobantes_dir, pdf_filename)
+            
+            print(f"Saving PDF to: {pdf_path}")
+            print(f"PDF content size: {len(pdf_content)} bytes")
+            
+            with open(pdf_path, "wb") as f:
+                f.write(pdf_content)
+            
+            # Verify the file was written correctly
+            if os.path.exists(pdf_path):
+                file_size = os.path.getsize(pdf_path)
+                print(f"PDF saved successfully: {pdf_path} (size: {file_size} bytes)")
+                
+                # Quick validation - check if file starts with PDF header
+                with open(pdf_path, "rb") as f:
+                    header = f.read(4)
+                    if header == b'%PDF':
+                        print("✅ Saved PDF file has valid header")
+                    else:
+                        print(f"⚠️ Warning: Saved file doesn't have PDF header: {header}")
+                        
+                return {
+                    'pdf_filename': pdf_filename,
+                    'pdf_path': pdf_path,
+                    'pdf_size': file_size
+                }
+            else:
+                print("❌ Error: PDF file was not created")
+                return None
+                
+        except Exception as pdf_error:
+            print(f"Error downloading/saving PDF: {pdf_error}")
+            return None
+
+    async def obtener_comprobante_pdf(self, comprobante_id: int) -> bytes:
+        """Obtiene el PDF de un comprobante por su ID"""
+        return await self.biller_client.get_comprobante_pdf(comprobante_id)
 
 
 ## Cear Comprobante example payload:
@@ -106,3 +144,4 @@ class BillerService():
 #         }, 
 #     'items': [{'cantidad': 1, 'concepto': 'servicios de consultoría', 'precio': 1500.0, 'indicador_facturacion': 3}]
 # }
+
