@@ -1,17 +1,24 @@
+import os
+import json
 from ..clients.billeruy_client.client import BillerAPIClient
-from ..clients.billeruy_client.schemas import (
+from app.clients.billeruy_client.schemas import (
     ComprobanteCrearPayload, ClienteInfo, SucursalInfo, ItemInfo
 )
-import os
 
 class BillerService():
     def __init__(self):
         self.biller_client = BillerAPIClient()
 
-    async def crear_comprobante(self, data: ComprobanteCrearPayload):
-        payload = data.model_dump(exclude_none=True, mode="json")
-        print(f"PAYLOAD data: {payload}")
-        return await self.biller_client.post("v2/comprobantes/crear", payload)
+    async def crear_comprobante(self, data: ComprobanteCrearPayload | dict):
+        if isinstance(data, dict):
+            data = ComprobanteCrearPayload(**data)
+        
+        # Convert to dict first, then ensure proper JSON serialization with double quotes
+        payload_dict = data.model_dump(exclude_none=True, mode="json")
+        payload_json = json.dumps(payload_dict, ensure_ascii=False)
+        
+        print(f"PAYLOAD data: {payload_json}")
+        return await self.biller_client.post("v2/comprobantes/crear", payload_dict)
     
     def build_crear_comprobante_payload(
         self,
