@@ -1,7 +1,7 @@
 INVOICE_EXTRACTION_PROMPT = """
 Extraé del siguiente texto los siguientes campos para emitir una factura:
 
-- tipo_documento: 2 para persona jurídica o si se especifica un RUT, si hay omisión entonces es 2.
+- tipo_documento: debes asignar valor 2 si se especifica un RUT.
 - razon_social: nombre de la empresa.
 - documento: número de identificación de la empresa, puede ser un RUT o cédula.
 - direccion: dirección de la empresa, si hay omisión entonces "Calle 123".
