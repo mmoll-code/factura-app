@@ -116,7 +116,7 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
                     pdf_info = await biller_service.descargar_y_guardar_pdf(
                         comprobante_id, comprobante_serie, comprobante_numero
                     )
-                    
+
                     response_message = f"""Comprobante emitido con éxito ✅                     
 📄 **Detalles del comprobante:**
 • ID: {comprobante_id}
@@ -127,6 +127,8 @@ async def webhook_waapi(payload: WhatsappWebhookMessage):
 {f"📁 PDF guardado: {pdf_info['pdf_filename']}" if pdf_info else "⚠️ PDF no pudo descargarse"}
 
 El comprobante ha sido registrado correctamente en el sistema."""
+                    
+
                     
                 except Exception as e:
                     response_message = f"Ocurrió un error al emitir el comprobante: {str(e)}"
@@ -169,6 +171,22 @@ El comprobante ha sido registrado correctamente en el sistema."""
                     print("Warning: WhatsApp message failed to send")
                     return {"status": "ok", "warning": "Comprobante creado pero no se pudo enviar notificación"}
                 print("WhatsApp message sent successfully")
+                
+                # Send PDF file if available
+                if intent == "crear_comprobante" and pdf_info and pdf_info.get('pdf_path'):
+                    print(f"Sending PDF file: {pdf_info['pdf_filename']}")
+                    file_sent = await messenger.send_file(
+                        phone=payload.from_,
+                        file_path=pdf_info['pdf_path'],
+                        filename=pdf_info['pdf_filename'],
+                        caption=f"Comprobante {comprobante_serie}-{comprobante_numero}",
+                        is_group=payload.isGroupMsg or False
+                    )
+                    if file_sent:
+                        print("PDF file sent successfully via WhatsApp")
+                    else:
+                        print("Warning: PDF file failed to send via WhatsApp")
+                        
             except Exception as whatsapp_error:
                 print(f"WhatsApp error: {whatsapp_error}")
                 # Don't fail the whole request if WhatsApp fails

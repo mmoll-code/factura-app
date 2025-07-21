@@ -68,7 +68,14 @@ class BillerService():
         pdf_filename = None
         try:
             print(f"Attempting to download PDF for comprobante ID: {comprobante_id}")
-            pdf_content = await self.obtener_comprobante_pdf(comprobante_id)
+            pdf_base64_content = await self.obtener_comprobante_pdf(comprobante_id)
+            
+            print(f"Original PDF content size: {len(pdf_base64_content)} bytes")
+            print(f"Content type: {type(pdf_base64_content)}")
+            
+            # Try to decode as string first to check for base64
+            import base64
+            pdf_str = base64.b64decode(pdf_base64_content)
             
             # Create comprobantes directory if it doesn't exist
             comprobantes_dir = os.path.join(os.getcwd(), "comprobantes")
@@ -79,10 +86,9 @@ class BillerService():
             pdf_path = os.path.join(comprobantes_dir, pdf_filename)
             
             print(f"Saving PDF to: {pdf_path}")
-            print(f"PDF content size: {len(pdf_content)} bytes")
             
             with open(pdf_path, "wb") as f:
-                f.write(pdf_content)
+                f.write(pdf_str)
             
             # Verify the file was written correctly
             if os.path.exists(pdf_path):

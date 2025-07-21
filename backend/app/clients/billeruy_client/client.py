@@ -113,49 +113,36 @@ class BillerAPIClient:
         return await self.post("/v2/comprobantes/crear", test_payload)
 
     async def get_comprobante_pdf(self, comprobante_id: int) -> bytes:
-        """Get PDF of comprobante by ID"""
+        """Download PDF content for a comprobante"""
+        # url = f"{self.base_url}/v2/comprobantes/{comprobante_id}/pdf"
         url = f"{self.base_url}/v2/comprobantes/pdf?id={comprobante_id}"
-        print(f"Getting PDF from: {url}")
+        print(f"Downloading PDF from: {url}")
         
         try:
             client = await self._get_client()
             response = await client.get(url, headers=self.headers)
             
             print(f"PDF Response status: {response.status_code}")
-            print(f"PDF Response content-type: {response.headers.get('content-type', 'unknown')}")
-            print(f"PDF Response content-length: {response.headers.get('content-length', 'unknown')}")
+            print(f"PDF Response headers: {dict(response.headers)}")
             
             if response.status_code >= 400:
                 error_message = self._parse_error_response(response.text)
-                print(f"BillerAPIError getting PDF: {error_message}")
+                print(f"BillerAPIError: {error_message}")
                 raise BillerAPIError(response.status_code, error_message)
             
-            # Validate that we got actual PDF content
+            # Get content and analyze it
             content = response.content
-            print(f"Downloaded content size: {len(content)} bytes")
+            print(f"🔍 PDF Content Analysis:")
+            print(f"  - Content type: {type(content)}")
+            print(f"  - Content size: {len(content)} bytes")
             
-            # Check if it's a valid PDF (should start with %PDF)
-            if content[:4] == b'%PDF':
-                print("✅ Valid PDF header detected")
-            else:
-                print(f"⚠️ Invalid PDF header. First 50 bytes: {content[:50]}")
-                # Try to decode as text to see if it's an error message
-                try:
-                    text_content = content.decode('utf-8')
-                    print(f"Content as text: {text_content[:200]}...")
-                    raise BillerAPIError(500, f"Received invalid PDF content: {text_content[:200]}")
-                except UnicodeDecodeError:
-                    print("Content is binary but not a valid PDF")
-                    raise BillerAPIError(500, "Received invalid PDF content")
-            
-            # Additional validation - check file size
-            if len(content) < 100:
-                print(f"⚠️ PDF file suspiciously small: {len(content)} bytes")
-            
+            # Try to detect content format
+            # import base64
+            # pdf_bytes = base64.b64decode(content)
+           
             return content
-            
         except Exception as e:
-            print(f"Error getting PDF: {e}")
+            print(f"Error downloading PDF: {e}")
             raise
 
     def _parse_error_response(self, error_text: str) -> str:
